@@ -1,0 +1,50 @@
+"""
+
+@author: fabian trojer | Geoville
+
+Description: Based on a column ("product_na) in a existing shapefile (in this case of polygons), create a new column
+("path) containing the path to related VHR files.
+
+
+Necessary Parameters:
+- path to shapefile (e.g. r"C:\gv\Footprint_GV\vhr2021__prod_data_ref_ref.shp")
+- path to directory of VHR files (e.g. 'C:\gv\VHR_IMAGE_2021')
+- output folder where generated shapefile is meant to be stored (r"C:\gv\Footprint_GV\vhr2021__prod_data_ref_ref_mod.shp")
+
+"""
+import geopandas as gpd
+import os
+import glob
+
+
+def vhr_add_path(shapefile, directory, output):
+    shp = gpd.read_file(shapefile)
+    vhr_directory = directory
+    shp_new = shp.copy()  # CREATE A NEW DATAFRAME TO STORE THE UPDATED PATH COLUMN
+
+    # LOOP THROUGH THE ROWS OF THE GEODATAFRAME
+    for i, row in shp.iterrows():
+        # Define the product name
+        product_na = row['product_na']
+
+        # DEFINE THE SEARCH PATTERN TO FIND THE FILE
+        search_pattern = os.path.join(vhr_directory, '**', 'Level_3', product_na)
+
+        # USE GLOB TO FIND THE FILE
+        file_paths = glob.glob(search_pattern, recursive=True)
+
+        # CHECK IF A FILE WAS FOUND
+        if len(file_paths) > 0:
+            # USE THE FIRST FILE PATH FOUND
+            file_path = file_paths[0]
+            # UPDATE THE "PATH" COLUMN WITH THE FILE PATH IN THE NEW DATAFRAME
+            shp_new.loc[i, 'path'] = file_path
+        else:
+            # LEAVE THE PATH COLUMN OF THE ROW EMPTY IF NO FILE WAS FOUND
+            shp_new.loc[i, 'path'] = ''
+
+
+    shp_new.to_file(output)
+
+
+vhr_add_path(r"C:\gv\Footprint_GV\vhr2021__prod_data_ref_ref.shp", 'C:\gv\VHR_IMAGE_2021', r"C:\gv\Footprint_GV\vhr2021__prod_data_ref_ref_mod.shp")
